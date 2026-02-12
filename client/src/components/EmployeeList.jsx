@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api, { getFileUrl } from '../api';
 import { Search, UserPlus, User, Pencil, Trash2, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import EmployeeFormModal from './EmployeeFormModal';
@@ -16,7 +16,7 @@ const EmployeeList = () => {
 
     const fetchEmployees = async () => {
         try {
-            const res = await axios.get('/api/employees');
+            const res = await api.get('/api/employees');
             setEmployees(res.data);
         } catch (error) {
             console.error('Failed to fetch employees:', error);
@@ -44,7 +44,7 @@ const EmployeeList = () => {
         e.stopPropagation();
         if (!window.confirm('Tem certeza que deseja excluir este colaborador? Todas as métricas e feedbacks associados serão apagados permanentemente.')) return;
         try {
-            await axios.delete(`/api/employees/${id}`);
+            await api.delete(`/api/employees/${id}`);
             fetchEmployees();
         } catch (error) {
             alert('Erro ao excluir colaborador: ' + (error.response?.data?.error || error.message));
@@ -150,7 +150,7 @@ const EmployeeList = () => {
                                     <td className="px-6 py-4 font-medium text-slate-700 flex items-center gap-3 text-sm">
                                         <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 overflow-hidden border border-slate-50">
                                             {employee.photo ? (
-                                                <img src={`/uploads/${employee.photo}`} alt="" className="h-full w-full object-cover" />
+                                                <img src={getFileUrl(employee.photo)} alt="" className="h-full w-full object-cover" />
                                             ) : (
                                                 <User size={16} />
                                             )}

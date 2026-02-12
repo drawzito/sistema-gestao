@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api, { getFileUrl } from '../api';
 import { X } from 'lucide-react';
 
 const FeedbackFormModal = ({ feedback, employeeId, employees, onClose, onSaved }) => {
@@ -18,11 +18,11 @@ const FeedbackFormModal = ({ feedback, employeeId, employees, onClose, onSaved }
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);
-    const [previewUrl, setPreviewUrl] = useState(feedback?.image ? `/uploads/${feedback.image}` : null);
+    const [previewUrl, setPreviewUrl] = useState(feedback?.image ? getFileUrl(feedback.image) : null);
 
     useEffect(() => {
         if (!employees || employees.length === 0) {
-            axios.get('/api/employees')
+            api.get('/api/employees')
                 .then(res => setEmployeeList(res.data))
                 .catch(() => setError('Erro ao carregar colaboradores.'));
         }
@@ -61,9 +61,9 @@ const FeedbackFormModal = ({ feedback, employeeId, employees, onClose, onSaved }
 
             let fbId = feedback?.id;
             if (isEdit) {
-                await axios.put(`/api/feedbacks/${feedback.id}`, form);
+                await api.put(`/api/feedbacks/${feedback.id}`, form);
             } else {
-                const res = await axios.post('/api/feedbacks', form);
+                const res = await api.post('/api/feedbacks', form);
                 fbId = res.data.id;
             }
 
@@ -71,7 +71,7 @@ const FeedbackFormModal = ({ feedback, employeeId, employees, onClose, onSaved }
             if (selectedFile) {
                 const formData = new FormData();
                 formData.append('photo', selectedFile);
-                await axios.post(`/api/feedbacks/${fbId}/photo`, formData, {
+                await api.post(`/api/feedbacks/${fbId}/photo`, formData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
             }

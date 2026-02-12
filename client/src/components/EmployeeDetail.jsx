@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api, { getFileUrl } from '../api';
 import { useParams, useNavigate } from 'react-router-dom';
 import { User, ArrowLeft, Star, MessageSquare, AlertCircle, CheckCircle, Plus, Download, Pencil, Trash2 } from 'lucide-react';
 import FeedbackFormModal from './FeedbackFormModal';
@@ -18,7 +18,7 @@ const EmployeeDetail = () => {
 
     const fetchEmployee = async () => {
         try {
-            const res = await axios.get(`/api/employees/${id}`);
+            const res = await api.get(`/api/employees/${id}`);
             setEmployee(res.data);
         } catch (error) {
             console.error('Failed to fetch employee details:', error);
@@ -44,7 +44,7 @@ const EmployeeDetail = () => {
     const handleDeleteFeedback = async (fbId) => {
         if (!window.confirm('Tem certeza que deseja excluir este feedback?')) return;
         try {
-            await axios.delete(`/api/feedbacks/${fbId}`);
+            await api.delete(`/api/feedbacks/${fbId}`);
             fetchEmployee();
         } catch (error) {
             alert('Erro ao excluir feedback.');
@@ -66,7 +66,7 @@ const EmployeeDetail = () => {
     const handleDeleteEmployee = async () => {
         if (!window.confirm('Tem certeza que deseja excluir este colaborador? Todas as métricas e feedbacks associados serão apagados permanentemente.')) return;
         try {
-            await axios.delete(`/api/employees/${id}`);
+            await api.delete(`/api/employees/${id}`);
             navigate('/employees');
         } catch (error) {
             alert('Erro ao excluir colaborador: ' + (error.response?.data?.error || error.message));
@@ -86,7 +86,7 @@ const EmployeeDetail = () => {
 
         setUploading(true);
         try {
-            await axios.post(`/api/employees/${id}/photo`, formData, {
+            await api.post(`/api/employees/${id}/photo`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             fetchEmployee();
@@ -120,7 +120,7 @@ const EmployeeDetail = () => {
                     >
                         {employee.photo ? (
                             <img
-                                src={`/uploads/${employee.photo}`}
+                                src={getFileUrl(employee.photo)}
                                 alt={employee.name}
                                 className="h-full w-full object-cover"
                             />
@@ -312,10 +312,10 @@ const EmployeeDetail = () => {
                                         {fb.image && (
                                             <div className="mt-2 rounded-lg overflow-hidden border border-slate-100 max-w-sm">
                                                 <img
-                                                    src={`/uploads/${fb.image}`}
+                                                    src={getFileUrl(fb.image)}
                                                     alt="Feedback attachment"
                                                     className="w-full h-auto cursor-pointer hover:opacity-95 transition-opacity"
-                                                    onClick={() => window.open(`/uploads/${fb.image}`, '_blank')}
+                                                    onClick={() => window.open(getFileUrl(fb.image), '_blank')}
                                                 />
                                             </div>
                                         )}

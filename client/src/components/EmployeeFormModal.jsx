@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { X } from 'lucide-react';
 
 const EmployeeFormModal = ({ employee, onClose, onSaved }) => {
@@ -39,9 +39,9 @@ const EmployeeFormModal = ({ employee, onClose, onSaved }) => {
             }
 
             if (isEdit) {
-                await axios.put(`/api/employees/${employee.id}`, form);
+                await api.put(`/api/employees/${employee.id}`, form);
             } else {
-                await axios.post('/api/employees', form);
+                await api.post('/api/employees', form);
             }
 
             onSaved();

@@ -1,38 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { upload, cloudinary, isCloudinary } = require('../storage');
 
-// Configure multer for feedback photos
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const dir = path.join(__dirname, '../uploads');
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-        cb(null, dir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'feedback-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-    fileFilter: (req, file, cb) => {
-        const filetypes = /jpeg|jpg|png|webp/;
-        const mimetype = filetypes.test(file.mimetype);
-        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-        if (mimetype && extname) {
-            return cb(null, true);
-        }
-        cb(new Error('Apenas imagens (jpeg, jpg, png, webp) são permitidas!'));
-    }
-});
 
 // GET all feedbacks (with filters)
 router.get('/', async (req, res) => {
@@ -115,13 +87,22 @@ router.post('/:id/photo', upload.single('photo'), async (req, res) => {
 
         // Delete old image if exists
         if (feedback.image) {
-            const oldPath = path.join(__dirname, '../uploads', feedback.image);
-            if (fs.existsSync(oldPath)) {
-                fs.unlinkSync(oldPath);
+            if (isCloudinary) {
+                try {
+                    const publicId = 'sistema-gestao/' + feedback.image.split('/').pop().split('.')[0];
+                    await cloudinary.uploader.destroy(publicId);
+                } catch (e) {
+                    console.error('Failed to delete from Cloudinary:', e);
+                }
+            } else {
+                const oldPath = path.join(__dirname, '../uploads', feedback.image);
+                if (fs.existsSync(oldPath)) {
+                    fs.unlinkSync(oldPath);
+                }
             }
         }
 
-        const photoName = req.file.filename;
+        const photoName = isCloudinary ? req.file.path : req.file.filename;
         await db('feedbacks').where({ id }).update({
             image: photoName,
             updated_at: db.fn.now()
@@ -168,11 +149,20 @@ router.delete('/:id', async (req, res) => {
         const existing = await db('feedbacks').where({ id }).first();
         if (!existing) return res.status(404).json({ error: 'Feedback não encontrado.' });
 
-        // Delete image from disk if exists
+        // Delete image from disk/cloud if exists
         if (existing.image) {
-            const photoPath = path.join(__dirname, '../uploads', existing.image);
-            if (fs.existsSync(photoPath)) {
-                fs.unlinkSync(photoPath);
+            if (isCloudinary) {
+                try {
+                    const publicId = 'sistema-gestao/' + existing.image.split('/').pop().split('.')[0];
+                    await cloudinary.uploader.destroy(publicId);
+                } catch (e) {
+                    console.error('Failed to delete from Cloudinary:', e);
+                }
+            } else {
+                const photoPath = path.join(__dirname, '../uploads', existing.image);
+                if (fs.existsSync(photoPath)) {
+                    fs.unlinkSync(photoPath);
+                }
             }
         }
 

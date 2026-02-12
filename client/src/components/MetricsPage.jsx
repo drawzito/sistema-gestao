@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Search, Filter, Plus, Download, Pencil, Trash2 } from 'lucide-react';
+import api from '../api';
+import { Search, Filter, Plus, Download, Pencil, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import MetricFormModal from './MetricFormModal';
 
 const MetricsPage = () => {
@@ -15,6 +15,7 @@ const MetricsPage = () => {
         sectors: [],
         months: []
     });
+    const [sortConfig, setSortConfig] = useState({ key: 'month_year', direction: 'desc' });
     const [showModal, setShowModal] = useState(false);
     const [editingMetric, setEditingMetric] = useState(null);
 
@@ -22,7 +23,7 @@ const MetricsPage = () => {
         setLoading(true);
         try {
             const query = new URLSearchParams(filters).toString();
-            const res = await axios.get(`/api/metrics?${query}`);
+            const res = await api.get(`/api/metrics?${query}`);
             setMetrics(res.data.data);
             if (res.data.filters) {
                 setAvailableFilters({
@@ -49,6 +50,31 @@ const MetricsPage = () => {
         setFilters(prev => ({ ...prev, [key]: value }));
     };
 
+    const handleSort = (key) => {
+        let direction = 'desc';
+        if (sortConfig.key === key && sortConfig.direction === 'desc') {
+            direction = 'asc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const sortedMetrics = [...metrics].sort((a, b) => {
+        if (!sortConfig.key) return 0;
+
+        let aVal = a[sortConfig.key];
+        let bVal = b[sortConfig.key];
+
+        // Handle numeric values
+        if (['tickets_assumed', 'tickets_finished', 'score'].includes(sortConfig.key)) {
+            aVal = Number(aVal) || 0;
+            bVal = Number(bVal) || 0;
+        }
+
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
     const handleCreate = () => {
         setEditingMetric(null);
         setShowModal(true);
@@ -62,7 +88,7 @@ const MetricsPage = () => {
     const handleDelete = async (id) => {
         if (!window.confirm('Tem certeza que deseja excluir esta métrica?')) return;
         try {
-            await axios.delete(`/api/metrics/${id}`);
+            await api.delete(`/api/metrics/${id}`);
             fetchMetrics();
         } catch (error) {
             alert('Erro ao excluir métrica.');
@@ -71,12 +97,16 @@ const MetricsPage = () => {
 
     const handleExport = () => {
         const query = new URLSearchParams(filters).toString();
-        // Open CSV download in new tab/trigger download
         window.open(`/api/metrics/export?${query}`, '_blank');
     };
 
     const handleModalSaved = () => {
         fetchMetrics();
+    };
+
+    const SortIcon = ({ column }) => {
+        if (sortConfig.key !== column) return null;
+        return sortConfig.direction === 'asc' ? <ChevronUp size={14} className="ml-1" /> : <ChevronDown size={14} className="ml-1" />;
     };
 
     return (
@@ -88,7 +118,6 @@ const MetricsPage = () => {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                    {/* Create Button */}
                     <button
                         onClick={handleCreate}
                         className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
@@ -97,7 +126,6 @@ const MetricsPage = () => {
                         Nova Métrica
                     </button>
 
-                    {/* Export Button */}
                     <button
                         onClick={handleExport}
                         className="flex items-center gap-2 bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
@@ -106,7 +134,6 @@ const MetricsPage = () => {
                         Exportar CSV
                     </button>
 
-                    {/* Sector Filter */}
                     <div className="relative">
                         <select
                             className="appearance-none bg-white border border-slate-200 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-600"
@@ -121,7 +148,6 @@ const MetricsPage = () => {
                         <Filter className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
                     </div>
 
-                    {/* Month Filter */}
                     <div className="relative">
                         <select
                             className="appearance-none bg-white border border-slate-200 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-600"
@@ -136,7 +162,6 @@ const MetricsPage = () => {
                         <Filter className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
                     </div>
 
-                    {/* Search */}
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                         <input
@@ -154,22 +179,34 @@ const MetricsPage = () => {
                 <table className="w-full text-left font-medium">
                     <thead className="bg-slate-50 text-slate-500 text-sm">
                         <tr>
-                            <th className="px-6 py-4">Colaborador</th>
-                            <th className="px-6 py-4">Setor</th>
-                            <th className="px-6 py-4">Mês/Ano</th>
-                            <th className="px-6 py-4 text-center">Assumidos</th>
-                            <th className="px-6 py-4 text-center">Finalizados</th>
-                            <th className="px-6 py-4 text-center">Score</th>
+                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('employee_name')}>
+                                <div className="flex items-center">Colaborador <SortIcon column="employee_name" /></div>
+                            </th>
+                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('employee_sector')}>
+                                <div className="flex items-center">Setor <SortIcon column="employee_sector" /></div>
+                            </th>
+                            <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('month_year')}>
+                                <div className="flex items-center">Mês/Ano <SortIcon column="month_year" /></div>
+                            </th>
+                            <th className="px-6 py-4 text-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('tickets_assumed')}>
+                                <div className="flex items-center justify-center">Assumidos <SortIcon column="tickets_assumed" /></div>
+                            </th>
+                            <th className="px-6 py-4 text-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('tickets_finished')}>
+                                <div className="flex items-center justify-center">Finalizados <SortIcon column="tickets_finished" /></div>
+                            </th>
+                            <th className="px-6 py-4 text-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('score')}>
+                                <div className="flex items-center justify-center">Score <SortIcon column="score" /></div>
+                            </th>
                             <th className="px-6 py-4 text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-sm">
                         {loading ? (
                             <tr><td colSpan="7" className="p-8 text-center text-slate-500">Carregando métricas...</td></tr>
-                        ) : metrics.length === 0 ? (
+                        ) : sortedMetrics.length === 0 ? (
                             <tr><td colSpan="7" className="p-8 text-center text-slate-400">Nenhum resultado encontrado.</td></tr>
                         ) : (
-                            metrics.map((m, i) => (
+                            sortedMetrics.map((m, i) => (
                                 <tr key={i} className="hover:bg-slate-50 transition-colors">
                                     <td className="px-6 py-4 text-slate-700 font-semibold">{m.employee_name}</td>
                                     <td className="px-6 py-4 text-slate-600">{m.employee_sector || '-'}</td>
