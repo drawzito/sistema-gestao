@@ -1,5 +1,8 @@
 {
   "name": "client",
+  "engines": {
+    "node": "24.x"
+  },
   "private": true,
   "version": "0.0.0",
   "type": "module",
