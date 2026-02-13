@@ -6,7 +6,7 @@
         "client"
     ],
     "engines": {
-        "node": "18.x"
+        "node": "20.x"
     },
     "scripts": {
         "install-all": "npm install && cd client && npm install",
