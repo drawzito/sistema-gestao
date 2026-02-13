@@ -10,7 +10,7 @@
     },
     "scripts": {
         "install-all": "npm install && cd client && npm install",
-        "build": "cd client && npm run build"
+        "build": "cd client && npm run build && mv dist ../dist"
     },
     "dependencies": {
         "cloudinary": "^1.41.3",
