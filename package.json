@@ -1,0 +1,26 @@
+{
+    "name": "sistema-gestao",
+    "version": "1.0.0",
+    "private": true,
+    "workspaces": [
+        "client"
+    ],
+    "engines": {
+        "node": "18.x"
+    },
+    "scripts": {
+        "install-all": "npm install && cd client && npm install",
+        "build": "cd client && npm run build"
+    },
+    "dependencies": {
+        "cloudinary": "^1.41.3",
+        "cors": "^2.8.6",
+        "dotenv": "^17.3.0",
+        "express": "^5.2.1",
+        "knex": "^3.1.0",
+        "multer": "^2.0.2",
+        "multer-storage-cloudinary": "^4.0.0",
+        "pg": "^8.18.0",
+        "xlsx": "^0.18.5"
+    }
+}
